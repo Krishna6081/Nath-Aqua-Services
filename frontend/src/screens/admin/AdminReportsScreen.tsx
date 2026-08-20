@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Card, Button, SegmentedButtons, useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { adminApi } from '../../api/adminApi';
 import { GradientHeader } from '../../components/common/GradientHeader';
 import { CURRENCY_SYMBOL } from '../../constants/config';

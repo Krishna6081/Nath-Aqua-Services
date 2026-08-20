@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Text, Card, Button, useTheme, Chip } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { Product } from '../../../types';
 import { ImageWithFallback } from '../../common/ImageWithFallback';
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { DeliveryDashboardScreen } from '../screens/delivery/DeliveryDashboardScreen';
 import { DeliveryDetailScreen } from '../screens/delivery/DeliveryDetailScreen';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Image } from 'react-native';
 import { Text, Avatar, Button, Switch, useTheme, Card, IconButton, Divider } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -150,7 +150,7 @@ export const ProfileScreen = ({ navigation }: any) => {
             style={[styles.statBox, { backgroundColor: theme.colors.surface }]}
             onPress={() => navigation.navigate('SubscriptionsTab')}
           >
-            <Icon name="calendar-repeat" size={22} color="#0891b2" />
+            <Icon name="calendar-sync" size={22} color="#0891b2" />
             <Text variant="labelLarge" style={styles.statLabel}>
               Refills
             </Text>

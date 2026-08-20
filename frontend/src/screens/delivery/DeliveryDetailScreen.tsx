@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Linking } from 'react-native';
 import { Text, Card, Button, TextInput, useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { orderApi } from '../../api/orderApi';
 import { Order } from '../../types';
 import { GradientHeader } from '../../components/common/GradientHeader';

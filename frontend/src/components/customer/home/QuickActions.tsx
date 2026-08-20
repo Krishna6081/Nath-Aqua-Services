@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface QuickActionsProps {
   onOrderWater: () => void;
@@ -67,7 +67,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             onPress={item.onPress}
           >
             <View style={[styles.iconCircle, { backgroundColor: item.bgColor }]}>
-              <Icon name={item.icon} size={24} color={item.color} />
+              <Icon name={item.icon as any} size={26} color={item.color} />
             </View>
             <Text variant="labelMedium" style={[styles.label, { color: theme.colors.onSurface }]}>
               {item.label}

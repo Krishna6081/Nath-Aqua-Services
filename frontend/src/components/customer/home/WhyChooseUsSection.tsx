@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 export const WhyChooseUsSection: React.FC = () => {
   const theme = useTheme();
@@ -51,7 +51,7 @@ export const WhyChooseUsSection: React.FC = () => {
         {features.map((item) => (
           <View key={item.id} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
             <View style={[styles.iconCircle, { backgroundColor: item.bgColor }]}>
-              <Icon name={item.icon} size={24} color={item.iconColor} />
+              <Icon name={item.icon as any} size={28} color={item.iconColor} />
             </View>
             <Text variant="titleSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
               {item.title}
