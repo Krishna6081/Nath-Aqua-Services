@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Image } from 'react-native';
 import { Text, TextInput, Button, useTheme } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../redux/slices/authSlice';
@@ -52,12 +52,15 @@ export const RegisterScreen = ({ navigation }: any) => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>💧</Text>
+        <Image
+          source={require('../../../assets/logo.png')}
+          style={styles.logoImage}
+        />
         <Text variant="headlineSmall" style={styles.title}>
           Create Account
         </Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Sign up for clean water delivery
+          Sign up for Krishna Water Service delivery
         </Text>
       </View>
 
@@ -121,6 +124,8 @@ export const RegisterScreen = ({ navigation }: any) => {
 
         <Button
           mode="contained"
+          buttonColor="#0284c7"
+          textColor="#ffffff"
           onPress={handleRegister}
           loading={isLoading}
           disabled={isLoading}
@@ -150,11 +155,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  logo: {
-    fontSize: 54,
+  logoImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     marginBottom: 8,
+    resizeMode: 'contain',
   },
   title: {
     fontWeight: 'bold',

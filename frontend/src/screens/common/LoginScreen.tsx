@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, useTheme, SegmentedButtons } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, Image } from 'react-native';
+import { Text, TextInput, Button, useTheme } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, clearAuthError } from '../../redux/slices/authSlice';
+import { loginUser } from '../../redux/slices/authSlice';
 import { AppDispatch, RootState } from '../../redux/store';
 
 export const LoginScreen = ({ navigation }: any) => {
@@ -11,7 +11,7 @@ export const LoginScreen = ({ navigation }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);
+  const { isLoading } = useSelector((state: RootState) => state.auth);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -49,12 +49,15 @@ export const LoginScreen = ({ navigation }: any) => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>💧</Text>
+        <Image
+          source={require('../../../assets/logo.png')}
+          style={styles.logoImage}
+        />
         <Text variant="headlineSmall" style={styles.title}>
           Welcome Back
         </Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Sign in to Nath Water Service
+          Sign in to Krishna Water Service
         </Text>
       </View>
 
@@ -96,6 +99,8 @@ export const LoginScreen = ({ navigation }: any) => {
 
         <Button
           mode="contained"
+          buttonColor="#0284c7"
+          textColor="#ffffff"
           onPress={handleLogin}
           loading={isLoading}
           disabled={isLoading}
@@ -142,11 +147,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  logo: {
-    fontSize: 60,
+  logoImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     marginBottom: 12,
+    resizeMode: 'contain',
   },
   title: {
     fontWeight: 'bold',

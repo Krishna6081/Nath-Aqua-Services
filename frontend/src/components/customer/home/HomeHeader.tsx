@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, useTheme, Avatar, Badge } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Text, useTheme, Badge } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface HomeHeaderProps {
@@ -26,18 +26,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <View style={styles.topRow}>
         <TouchableOpacity style={styles.userSection} activeOpacity={0.8} onPress={onProfilePress}>
-          <Avatar.Text
-            size={42}
-            label={userName.charAt(0).toUpperCase()}
-            style={styles.avatar}
-            labelStyle={styles.avatarLabel}
+          <Image
+            source={require('../../../../assets/logo.png')}
+            style={styles.logoBadge}
           />
           <View style={styles.greetingContainer}>
             <Text variant="titleMedium" style={styles.greetingText}>
               Good Morning, {userName} 👋
             </Text>
             <Text variant="bodySmall" style={styles.subGreeting}>
-              Stay hydrated, stay healthy.
+              Krishna Water Service • Pure & Safe
             </Text>
           </View>
         </TouchableOpacity>
@@ -90,13 +88,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  avatar: {
+  logoBadge: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#ffffff',
     marginRight: 12,
-  },
-  avatarLabel: {
-    color: '#0284c7',
-    fontWeight: 'bold',
+    resizeMode: 'contain',
   },
   greetingContainer: {
     flex: 1,
