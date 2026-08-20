@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -19,32 +19,31 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  addresses           Address[]
-  orders              Order[]              @relation("CustomerOrders")
-  assignedDeliveries  Order[]              @relation("DeliveryPersonOrders")
-  subscriptions       Subscription[]
-  notifications       Notification[]
-  couponUsages        CouponUsage[]
-  deliveryAssignments DeliveryAssignment[] @relation("DeliveryPersonAssignments")
+  addresses          Address[]
+  orders             Order[]            @relation("CustomerOrders")
+  assignedDeliveries Order[]            @relation("DeliveryPersonOrders")
+  subscriptions      Subscription[]
+  notifications      Notification[]
+  deliveryAssignment DeliveryAssignment[]
 }
 
 model Product {
-  id             String   @id @default(uuid())
+  id             String      @id @default(uuid())
   name           String
   description    String
   capacity       String
   price          Float
-  deliveryCharge Float    @default(0)
+  deliveryCharge Float       @default(0)
   image          String?
-  stock          Int      @default(100)
-  unit           String   @default("CAN") // CAN | TANKER
-  isAvailable    Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  stock          Int         @default(100)
+  unit           String      @default("CAN") // CAN | TANKER
+  isAvailable    Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  orderItems    OrderItem[]
-  subscriptions Subscription[]
-  inventory     Inventory?
+  orderItems     OrderItem[]
+  subscriptions  Subscription[]
+  inventory      Inventory?
 }
 
 model Address {
@@ -79,12 +78,12 @@ model Order {
   addressId        String
   address          Address  @relation(fields: [addressId], references: [id])
   subtotal         Float
-  deliveryCharge   Float    @default(0)
+  deliveryCharge   Float
   discount         Float    @default(0)
   totalAmount      Float
-  paymentMethod    String   @default("COD") // COD | UPI | ONLINE
-  paymentStatus    String   @default("PENDING") // PENDING | SUCCESS | FAILED | REFUNDED
-  orderStatus      String   @default("PENDING") // PENDING | CONFIRMED | PREPARING | ASSIGNED | OUT_FOR_DELIVERY | DELIVERED | CANCELLED | FAILED_DELIVERY
+  paymentMethod    String   @default("COD") // COD | ONLINE | UPI
+  paymentStatus    String   @default("PENDING") // PENDING | SUCCESS | FAILED
+  orderStatus      String   @default("PENDING") // PENDING | CONFIRMED | PREPARING | ASSIGNED | OUT_FOR_DELIVERY | DELIVERED | CANCELLED
   deliveryDate     String
   deliveryTime     String
   deliveryOtp      String?
@@ -93,9 +92,9 @@ model Order {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  items       OrderItem[]
-  payments    Payment[]
-  assignments DeliveryAssignment[]
+  items              OrderItem[]
+  payments           Payment[]
+  deliveryAssignment DeliveryAssignment[]
 }
 
 model OrderItem {
@@ -118,7 +117,7 @@ model Payment {
   paymentId       String?
   signature       String?
   amount          Float
-  status          String   @default("PENDING")
+  status          String   @default("PENDING") // PENDING | SUCCESS | FAILED
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -128,12 +127,11 @@ model DeliveryAssignment {
   orderId          String
   order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   deliveryPersonId String
-  deliveryPerson   User      @relation("DeliveryPersonAssignments", fields: [deliveryPersonId], references: [id])
+  deliveryPerson   User      @relation(fields: [deliveryPersonId], references: [id])
   assignedAt       DateTime  @default(now())
   acceptedAt       DateTime?
   completedAt      DateTime?
-  status           String    @default("ASSIGNED")
-  notes            String?
+  status           String    @default("ASSIGNED") // ASSIGNED | ACCEPTED | OUT_FOR_DELIVERY | DELIVERED | FAILED
 }
 
 model Subscription {
@@ -142,14 +140,14 @@ model Subscription {
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId          String
   product            Product   @relation(fields: [productId], references: [id])
-  quantity           Int
+  quantity           Int       @default(1)
   frequency          String    @default("DAILY") // DAILY | ALTERNATE_DAYS | WEEKLY | MONTHLY
   startDate          String
   endDate            String?
-  deliveryTime       String
+  deliveryTime       String    @default("08:00 AM - 10:00 AM")
   addressId          String
   address            Address   @relation(fields: [addressId], references: [id])
-  status             String    @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED | COMPLETED
+  status             String    @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
   lastGeneratedOrder String?
   nextDeliveryDate   String
   createdAt          DateTime  @default(now())
@@ -157,29 +155,19 @@ model Subscription {
 }
 
 model Coupon {
-  id             String   @id @default(uuid())
-  code           String   @unique
-  discountType   String   @default("PERCENTAGE") // PERCENTAGE | FIXED
+  id             String    @id @default(uuid())
+  code           String    @unique
+  discountType   String    @default("PERCENTAGE") // PERCENTAGE | FIXED
   discountValue  Float
-  minOrderAmount Float    @default(0)
+  minOrderAmount Float     @default(0)
   maxDiscount    Float?
   startDate      DateTime
   endDate        DateTime
   usageLimit     Int?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-
-  usages CouponUsage[]
-}
-
-model CouponUsage {
-  id       String   @id @default(uuid())
-  couponId String
-  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId  String?
-  usedAt   DateTime @default(now())
+  usedCount      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Notification {
@@ -188,7 +176,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  type      String   @default("GENERAL")
+  type      String   @default("INFO")
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
@@ -197,16 +185,8 @@ model Inventory {
   id             String   @id @default(uuid())
   productId      String   @unique
   product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  totalStock     Int      @default(500)
-  availableStock Int      @default(500)
-  damagedStock   Int      @default(0)
-  returnedStock  Int      @default(0)
+  totalStock     Int      @default(100)
+  availableStock Int      @default(100)
+  reservedStock  Int      @default(0)
   updatedAt      DateTime @updatedAt
-}
-
-model Settings {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  updatedAt DateTime @updatedAt
 }

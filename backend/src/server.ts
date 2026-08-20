@@ -64,7 +64,7 @@ app.use(errorHandler);
 
 const startServer = async () => {
   await connectDB();
-  app.listen(config.port, '0.0.0.0', () => {
+  app.listen(Number(config.port), '0.0.0.0', () => {
     console.log(`🚀 Nath Water Service Backend API running on http://127.0.0.1:${config.port}/api in ${config.nodeEnv} mode`);
   });
 };
