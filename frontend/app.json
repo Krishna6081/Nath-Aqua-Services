@@ -2,6 +2,7 @@
   "expo": {
     "name": "Nath Water Service",
     "slug": "nath-water-service",
+    "owner": "krishna6081s-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
