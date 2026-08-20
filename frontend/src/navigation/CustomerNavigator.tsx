@@ -85,6 +85,7 @@ export const CustomerNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />
+      <Stack.Screen name="WaterServices" component={WaterServicesScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
@@ -99,3 +100,4 @@ export const CustomerNavigator = () => {
     </Stack.Navigator>
   );
 };
+

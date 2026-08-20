@@ -7,6 +7,7 @@ import { fetchProducts } from '../../redux/slices/productSlice';
 import { GradientHeader } from '../../components/common/GradientHeader';
 import { ProductCard } from '../../components/customer/ProductCard';
 import { addToCart } from '../../redux/slices/cartSlice';
+import { showItemAddedAlert } from '../../utils/cartAlert';
 
 export const WaterServicesScreen = ({ navigation }: any) => {
   const [filterUnit, setFilterUnit] = useState('ALL');
@@ -49,7 +50,10 @@ export const WaterServicesScreen = ({ navigation }: any) => {
           <ProductCard
             product={item}
             onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
-            onAddToCart={() => dispatch(addToCart({ product: item, quantity: 1 }))}
+            onAddToCart={() => {
+              dispatch(addToCart({ product: item, quantity: 1 }));
+              showItemAddedAlert(item.name, navigation);
+            }}
           />
         )}
       />

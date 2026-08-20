@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
 import { Card, Text, Button, FAB, useTheme } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { addressApi } from '../../api/addressApi';
 import { Address } from '../../types';
 import { GradientHeader } from '../../components/common/GradientHeader';
@@ -14,7 +15,9 @@ export const AddressListScreen = ({ navigation }: any) => {
     setLoading(true);
     try {
       const res = await addressApi.getAddresses();
-      setAddresses(res.data.addresses);
+      if (res.data && res.data.addresses) {
+        setAddresses(res.data.addresses);
+      }
     } catch (err) {
       console.log('Error loading addresses:', err);
     } finally {
@@ -22,9 +25,11 @@ export const AddressListScreen = ({ navigation }: any) => {
     }
   };
 
-  useEffect(() => {
-    loadAddresses();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses();
+    }, [])
+  );
 
   const handleDelete = async (id: string) => {
     try {
@@ -36,7 +41,7 @@ export const AddressListScreen = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <GradientHeader title="My Saved Addresses" showBack onBackPress={() => navigation.goBack()} />
 
       <FlatList
@@ -45,23 +50,36 @@ export const AddressListScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.listContent}
         refreshing={loading}
         onRefresh={loadAddresses}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={{ fontSize: 44, marginBottom: 12 }}>📍</Text>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onBackground }}>
+                No Saved Addresses
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.outline, textAlign: 'center', marginTop: 4 }}>
+                Add your delivery address to quickly place water orders.
+              </Text>
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
-          <Card style={styles.card}>
+          <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
             <Card.Content>
               <View style={styles.row}>
-                <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>
+                <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
                   {item.fullName} ({item.type})
                 </Text>
                 {item.isDefault && <Text style={styles.defaultBadge}>DEFAULT</Text>}
               </View>
-              <Text variant="bodySmall" style={{ color: '#475569', marginVertical: 4 }}>
-                {item.houseBuilding}, {item.street}, {item.area}, {item.city} - {item.pincode}
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginVertical: 4 }}>
+                {item.houseBuilding}, {item.street ? `${item.street}, ` : ''}{item.area}, {item.city} - {item.pincode}
               </Text>
-              <Text variant="bodySmall" style={{ color: '#64748b' }}>
+              <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
                 Phone: {item.phone}
               </Text>
               <View style={styles.actions}>
-                <Button compact mode="text" onPress={() => handleDelete(item.id)}>
+                <Button compact mode="text" textColor={theme.colors.error} onPress={() => handleDelete(item.id)}>
                   Delete Address
                 </Button>
               </View>
@@ -84,15 +102,21 @@ export const AddressListScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 90,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
   },
   card: {
     marginBottom: 12,
     borderRadius: 14,
+    elevation: 2,
   },
   row: {
     flexDirection: 'row',
@@ -117,7 +141,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     margin: 16,
     right: 0,
-    bottom: 10,
+    bottom: 12,
     borderRadius: 25,
   },
 });

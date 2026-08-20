@@ -1,4 +1,5 @@
 import React from 'react';
+import { LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as ReduxProvider, useSelector } from 'react-redux';
 import { PaperProvider } from 'react-native-paper';
@@ -6,6 +7,9 @@ import { store, RootState } from './src/redux/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { lightTheme, darkTheme } from './src/constants/theme';
 import { StatusBar } from 'expo-status-bar';
+
+// Suppress yellow box warning banners inside the app
+LogBox.ignoreAllLogs(true);
 
 const MainApp = () => {
   const { isDarkMode } = useSelector((state: RootState) => state.theme);

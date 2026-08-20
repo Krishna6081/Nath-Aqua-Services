@@ -7,6 +7,8 @@ import { GradientHeader } from '../../components/common/GradientHeader';
 import { addToCart } from '../../redux/slices/cartSlice';
 import { CURRENCY_SYMBOL } from '../../constants/config';
 
+import { showItemAddedAlert } from '../../utils/cartAlert';
+
 export const ProductDetailScreen = ({ route, navigation }: any) => {
   const { productId } = route.params;
   const [quantity, setQuantity] = useState(1);
@@ -28,7 +30,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
 
   const handleAddToCart = () => {
     dispatch(addToCart({ product, quantity }));
-    navigation.navigate('Cart');
+    showItemAddedAlert(product.name, navigation);
   };
 
   return (
@@ -95,6 +97,8 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
       <View style={styles.footer}>
         <Button
           mode="contained"
+          buttonColor="#ef4444"
+          textColor="#ffffff"
           onPress={handleAddToCart}
           style={styles.addBtn}
           contentStyle={{ paddingVertical: 8 }}

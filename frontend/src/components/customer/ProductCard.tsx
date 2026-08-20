@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Card, Text, Button, useTheme } from 'react-native-paper';
 import { Product } from '../../types';
 import { CURRENCY_SYMBOL } from '../../constants/config';
@@ -33,6 +33,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAd
         </View>
         <Button
           mode="contained"
+          buttonColor="#ef4444"
+          textColor="#ffffff"
           onPress={onAddToCart}
           style={styles.addButton}
           labelStyle={styles.addButtonLabel}
@@ -83,9 +85,10 @@ const styles = StyleSheet.create({
   },
   addButton: {
     borderRadius: 20,
+    paddingHorizontal: 6,
   },
   addButtonLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
   },
 });

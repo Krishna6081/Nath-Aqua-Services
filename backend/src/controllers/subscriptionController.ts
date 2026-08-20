@@ -8,7 +8,7 @@ export const getSubscriptions = async (req: AuthenticatedRequest, res: Response)
     const role = req.user?.role;
 
     const where: any = {};
-    if (role === 'CUSTOMER') {
+    if (role !== 'ADMIN' && userId) {
       where.userId = userId;
     }
 
@@ -24,6 +24,7 @@ export const getSubscriptions = async (req: AuthenticatedRequest, res: Response)
 
     return res.status(200).json({
       success: true,
+      count: subscriptions.length,
       subscriptions,
     });
   } catch (error: any) {
@@ -49,17 +50,19 @@ export const createSubscription = async (req: AuthenticatedRequest, res: Respons
       return res.status(400).json({ success: false, message: 'Address not found' });
     }
 
+    const start = startDate || new Date().toISOString().split('T')[0];
+
     const subscription = await prisma.subscription.create({
       data: {
         userId,
         productId,
-        quantity: parseInt(quantity),
+        quantity: parseInt(quantity) || 1,
         frequency: frequency || 'DAILY',
-        startDate,
+        startDate: start,
         endDate,
-        deliveryTime,
+        deliveryTime: deliveryTime || '08:00 AM - 10:00 AM',
         addressId,
-        nextDeliveryDate: startDate,
+        nextDeliveryDate: start,
         status: 'ACTIVE',
       },
       include: { product: true, address: true },
@@ -83,6 +86,50 @@ export const createSubscription = async (req: AuthenticatedRequest, res: Respons
     return res.status(500).json({
       success: false,
       message: error.message || 'Error creating subscription',
+    });
+  }
+};
+
+export const pauseSubscription = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const subscription = await prisma.subscription.update({
+      where: { id },
+      data: { status: 'PAUSED' },
+      include: { product: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription paused successfully',
+      subscription,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error pausing subscription',
+    });
+  }
+};
+
+export const resumeSubscription = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const subscription = await prisma.subscription.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+      include: { product: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription resumed successfully',
+      subscription,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error resuming subscription',
     });
   }
 };

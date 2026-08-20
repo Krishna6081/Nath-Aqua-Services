@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Card, Text, Button, Menu } from 'react-native-paper';
 import { orderApi } from '../../api/orderApi';
+import { adminApi } from '../../api/adminApi';
 import { Order } from '../../types';
 import { GradientHeader } from '../../components/common/GradientHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
@@ -9,30 +10,46 @@ import { CURRENCY_SYMBOL } from '../../constants/config';
 
 export const AdminOrdersScreen = ({ navigation }: any) => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuVisibleId, setMenuVisibleId] = useState<string | null>(null);
 
-  const loadOrders = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await orderApi.getOrders();
-      setOrders(res.data.orders);
+      const [resOrders, resStaff] = await Promise.all([
+        orderApi.getOrders(),
+        adminApi.getDeliveryStaff(),
+      ]);
+      setOrders(resOrders.data.orders);
+      setStaffList(resStaff.data.staff);
     } catch (err) {
-      console.log('Error loading admin orders:', err);
+      console.log('Error loading admin orders/staff:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadOrders();
+    loadData();
   }, []);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
       await orderApi.updateOrderStatus(id, { status });
-      loadOrders();
-    } catch (err) {
-      console.log(err);
+      loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not update order status');
+    }
+  };
+
+  const handleAssignStaff = async (orderId: string, deliveryPersonId: string) => {
+    try {
+      await orderApi.updateOrderStatus(orderId, { status: 'ASSIGNED', deliveryPersonId });
+      setMenuVisibleId(null);
+      loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not assign delivery executive');
     }
   };
 
@@ -45,7 +62,7 @@ export const AdminOrdersScreen = ({ navigation }: any) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshing={loading}
-        onRefresh={loadOrders}
+        onRefresh={loadData}
         renderItem={({ item }) => (
           <Card style={styles.card}>
             <Card.Content>
@@ -61,6 +78,11 @@ export const AdminOrdersScreen = ({ navigation }: any) => {
               <Text variant="bodySmall" style={{ color: '#0369a1' }}>
                 Delivery Slot: {item.deliveryDate} ({item.deliveryTime})
               </Text>
+              {item.deliveryPerson && (
+                <Text variant="bodySmall" style={{ color: '#16a34a', fontWeight: 'bold', marginTop: 2 }}>
+                  Assigned Staff: 🚚 {item.deliveryPerson.name} ({item.deliveryPerson.phone})
+                </Text>
+              )}
               <Text variant="titleMedium" style={{ fontWeight: 'bold', marginTop: 4, color: '#0284c7' }}>
                 {CURRENCY_SYMBOL}
                 {item.totalAmount.toFixed(2)} ({item.paymentMethod})
@@ -72,12 +94,26 @@ export const AdminOrdersScreen = ({ navigation }: any) => {
                     Confirm Order
                   </Button>
                 )}
-                {item.orderStatus === 'CONFIRMED' && (
-                  <Button compact mode="contained" onPress={() => handleUpdateStatus(item.id, 'PREPARING')}>
-                    Prepare Order
-                  </Button>
+                {(item.orderStatus === 'CONFIRMED' || item.orderStatus === 'PREPARING') && (
+                  <Menu
+                    visible={menuVisibleId === item.id}
+                    onDismiss={() => setMenuVisibleId(null)}
+                    anchor={
+                      <Button compact mode="outlined" onPress={() => setMenuVisibleId(item.id)}>
+                        Assign Staff ▾
+                      </Button>
+                    }
+                  >
+                    {staffList.map((staff) => (
+                      <Menu.Item
+                        key={staff.id}
+                        onPress={() => handleAssignStaff(item.id, staff.id)}
+                        title={`Assign ${staff.name}`}
+                      />
+                    ))}
+                  </Menu>
                 )}
-                {item.orderStatus === 'PREPARING' && (
+                {item.orderStatus === 'ASSIGNED' && (
                   <Button compact mode="contained" onPress={() => handleUpdateStatus(item.id, 'OUT_FOR_DELIVERY')}>
                     Out for Delivery
                   </Button>
@@ -112,5 +148,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    gap: 8,
   },
 });

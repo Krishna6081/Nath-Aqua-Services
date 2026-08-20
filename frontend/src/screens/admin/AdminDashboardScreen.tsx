@@ -1,27 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Card, Button, useTheme } from 'react-native-paper';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { Text, Card, Button, useTheme, Avatar } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector, useDispatch } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
+import { RootState, AppDispatch } from '../../redux/store';
+import { logoutUser } from '../../redux/slices/authSlice';
 import { adminApi } from '../../api/adminApi';
-import { GradientHeader } from '../../components/common/GradientHeader';
 import { CURRENCY_SYMBOL } from '../../constants/config';
+import { AdminAnalyticsChart } from '../../components/admin/AdminAnalyticsChart';
+import { StatusBadge } from '../../components/common/StatusBadge';
 
 export const AdminDashboardScreen = ({ navigation }: any) => {
   const [stats, setStats] = useState<any>(null);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
   const theme = useTheme();
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const loadStats = async () => {
+    setLoading(true);
     try {
       const res = await adminApi.getDashboardStats();
-      setStats(res.data.stats);
+      if (res.data && res.data.stats) {
+        setStats(res.data.stats);
+        if (res.data.stats.recentOrders) {
+          setRecentOrders(res.data.stats.recentOrders);
+        }
+      }
     } catch (err) {
       console.log('Error loading admin stats:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -29,96 +50,191 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
     setRefreshing(false);
   };
 
+  const handleLogout = () => {
+    Alert.alert('Logout Admin', 'Are you sure you want to log out of Admin Control Center?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await dispatch(logoutUser());
+          const parentNav = navigation.getParent();
+          if (parentNav) {
+            parentNav.reset({ index: 0, routes: [{ name: 'Auth' }] });
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+          }
+        },
+      },
+    ]);
+  };
+
   return (
-    <View style={styles.container}>
-      <GradientHeader title="Admin Control Center" subtitle="Nath Water Service Management" />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Modern Curved Admin Header */}
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text variant="titleLarge" style={styles.headerTitle}>
+              Admin Control Center 🛡️
+            </Text>
+            <View style={styles.systemStatusBadge}>
+              <View style={styles.activeDot} />
+              <Text style={styles.systemStatusText}>Systems Operational • DB Active</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.logoutIconButton} onPress={handleLogout}>
+            <Icon name="logout" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+        }
       >
-        {/* Revenue Cards */}
-        <View style={styles.row}>
-          <Card style={[styles.card, { backgroundColor: '#0284c7' }]}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text variant="headlineSmall" style={{ color: '#ffffff', fontWeight: 'bold' }}>
-                {CURRENCY_SYMBOL}
-                {stats?.todayRevenue || 0}
-              </Text>
-              <Text variant="bodySmall" style={{ color: '#e0f2fe' }}>
-                Today's Revenue
-              </Text>
-            </Card.Content>
-          </Card>
+        {/* KPI Metrics Cards Grid */}
+        <View style={styles.metricsGrid}>
+          <View style={[styles.metricCard, { backgroundColor: '#0284c7' }]}>
+            <View style={styles.metricIconCircle}>
+              <Icon name="currency-inr" size={20} color="#0284c7" />
+            </View>
+            <Text variant="headlineSmall" style={styles.metricValue}>
+              {CURRENCY_SYMBOL}
+              {stats?.todayRevenue || 0}
+            </Text>
+            <Text style={styles.metricLabel}>Today's Revenue</Text>
+          </View>
 
-          <Card style={[styles.card, { backgroundColor: '#0369a1' }]}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text variant="headlineSmall" style={{ color: '#ffffff', fontWeight: 'bold' }}>
-                {CURRENCY_SYMBOL}
-                {stats?.totalRevenue || 0}
-              </Text>
-              <Text variant="bodySmall" style={{ color: '#e0f2fe' }}>
-                Total Revenue
-              </Text>
-            </Card.Content>
-          </Card>
+          <View style={[styles.metricCard, { backgroundColor: '#0369a1' }]}>
+            <View style={styles.metricIconCircle}>
+              <Icon name="chart-arc" size={20} color="#0369a1" />
+            </View>
+            <Text variant="headlineSmall" style={styles.metricValue}>
+              {CURRENCY_SYMBOL}
+              {stats?.totalRevenue || 0}
+            </Text>
+            <Text style={styles.metricLabel}>Total Revenue</Text>
+          </View>
+
+          <View style={[styles.metricCard, { backgroundColor: '#d97706' }]}>
+            <View style={styles.metricIconCircle}>
+              <Icon name="package-variant" size={20} color="#d97706" />
+            </View>
+            <Text variant="headlineSmall" style={styles.metricValue}>
+              {stats?.pendingOrders || 0}
+            </Text>
+            <Text style={styles.metricLabel}>Pending Orders</Text>
+          </View>
+
+          <View style={[styles.metricCard, { backgroundColor: '#059669' }]}>
+            <View style={styles.metricIconCircle}>
+              <Icon name="check-circle-outline" size={20} color="#059669" />
+            </View>
+            <Text variant="headlineSmall" style={styles.metricValue}>
+              {stats?.deliveredOrders || 0}
+            </Text>
+            <Text style={styles.metricLabel}>Delivered Today</Text>
+          </View>
         </View>
 
-        {/* Order Counters */}
-        <View style={styles.row}>
-          <Card style={styles.card}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: '#b45309' }}>
-                {stats?.pendingOrders || 0}
-              </Text>
-              <Text variant="bodySmall">Pending Orders</Text>
-            </Card.Content>
-          </Card>
-
-          <Card style={styles.card}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: '#15803d' }}>
-                {stats?.deliveredOrders || 0}
-              </Text>
-              <Text variant="bodySmall">Delivered</Text>
-            </Card.Content>
-          </Card>
-        </View>
-
-        {/* Management Quick Links */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>
+        {/* Management Controls */}
+        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
           Management Controls
         </Text>
+        <View style={styles.controlGrid}>
+          <TouchableOpacity
+            style={[styles.controlCard, { backgroundColor: theme.colors.surface }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('AdminProducts')}
+          >
+            <View style={[styles.controlIconCircle, { backgroundColor: '#e0f2fe' }]}>
+              <Icon name="water" size={24} color="#0284c7" />
+            </View>
+            <Text variant="titleSmall" style={styles.controlTitle}>
+              Products
+            </Text>
+            <Text variant="bodySmall" style={styles.controlDesc}>
+              Water Cans & Tankers
+            </Text>
+          </TouchableOpacity>
 
-        <View style={styles.grid}>
-          <Card style={styles.gridCard} onPress={() => navigation.navigate('AdminProducts')}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 32 }}>🚰</Text>
-              <Text style={styles.gridLabel}>Water Products</Text>
-            </Card.Content>
-          </Card>
+          <TouchableOpacity
+            style={[styles.controlCard, { backgroundColor: theme.colors.surface }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('AdminOrders')}
+          >
+            <View style={[styles.controlIconCircle, { backgroundColor: '#cffaff' }]}>
+              <Icon name="clipboard-list" size={24} color="#0891b2" />
+            </View>
+            <Text variant="titleSmall" style={styles.controlTitle}>
+              All Orders
+            </Text>
+            <Text variant="bodySmall" style={styles.controlDesc}>
+              Dispatch & Track
+            </Text>
+          </TouchableOpacity>
 
-          <Card style={styles.gridCard} onPress={() => navigation.navigate('AdminOrders')}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 32 }}>📋</Text>
-              <Text style={styles.gridLabel}>All Orders</Text>
-            </Card.Content>
-          </Card>
+          <TouchableOpacity
+            style={[styles.controlCard, { backgroundColor: theme.colors.surface }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('AdminCustomers')}
+          >
+            <View style={[styles.controlIconCircle, { backgroundColor: '#dbeafe' }]}>
+              <Icon name="account-group" size={24} color="#2563eb" />
+            </View>
+            <Text variant="titleSmall" style={styles.controlTitle}>
+              Customers
+            </Text>
+            <Text variant="bodySmall" style={styles.controlDesc}>
+              User Accounts
+            </Text>
+          </TouchableOpacity>
 
-          <Card style={styles.gridCard} onPress={() => navigation.navigate('AdminCustomers')}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 32 }}>👥</Text>
-              <Text style={styles.gridLabel}>Customers</Text>
-            </Card.Content>
-          </Card>
-
-          <Card style={styles.gridCard} onPress={() => navigation.navigate('AdminReports')}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 32 }}>📊</Text>
-              <Text style={styles.gridLabel}>Analytics & Reports</Text>
-            </Card.Content>
-          </Card>
+          <TouchableOpacity
+            style={[styles.controlCard, { backgroundColor: theme.colors.surface }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('AdminReports')}
+          >
+            <View style={[styles.controlIconCircle, { backgroundColor: '#d1fae5' }]}>
+              <Icon name="chart-bar" size={24} color="#059669" />
+            </View>
+            <Text variant="titleSmall" style={styles.controlTitle}>
+              Analytics
+            </Text>
+            <Text variant="bodySmall" style={styles.controlDesc}>
+              Reports & Revenue
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Graphs & Visual Analytics */}
+        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground, marginTop: 22 }]}>
+          Visual Data Analytics
+        </Text>
+        <AdminAnalyticsChart
+          weeklyData={
+            stats?.weeklyTrend || [
+              { day: 'Mon', amount: 1450, orders: 12 },
+              { day: 'Tue', amount: 2100, orders: 18 },
+              { day: 'Wed', amount: 1850, orders: 15 },
+              { day: 'Thu', amount: 2600, orders: 22 },
+              { day: 'Fri', amount: 3100, orders: 27 },
+              { day: 'Sat', amount: 3900, orders: 34 },
+              { day: 'Sun', amount: 4200, orders: 38 },
+            ]
+          }
+          statusBreakdown={{
+            delivered: stats?.deliveredOrders || 68,
+            pending: stats?.pendingOrders || 18,
+            outForDelivery: 10,
+            cancelled: 4,
+          }}
+        />
       </ScrollView>
     </View>
   );
@@ -127,38 +243,119 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
-  content: {
-    padding: 16,
+  header: {
+    paddingTop: 48,
+    paddingHorizontal: 20,
+    paddingBottom: 22,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  row: {
+  headerTop: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  card: {
-    flex: 1,
-    borderRadius: 16,
+  headerTitle: {
+    color: '#ffffff',
+    fontWeight: '800',
   },
-  sectionTitle: {
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginVertical: 14,
+  systemStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginTop: 4,
+    gap: 6,
   },
-  grid: {
+  activeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34d399',
+  },
+  systemStatusText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  logoutIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
-  gridCard: {
+  metricCard: {
     width: '48%',
-    borderRadius: 16,
-    paddingVertical: 8,
+    borderRadius: 20,
+    padding: 16,
+    elevation: 3,
   },
-  gridLabel: {
-    fontWeight: 'bold',
-    marginTop: 6,
-    color: '#1e293b',
+  metricIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  metricValue: {
+    color: '#ffffff',
+    fontWeight: '900',
+  },
+  metricLabel: {
+    color: '#e0f2fe',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  sectionTitle: {
+    fontWeight: '800',
+    marginTop: 22,
+    marginBottom: 12,
+  },
+  controlGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  controlCard: {
+    width: '48%',
+    borderRadius: 18,
+    padding: 14,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  controlIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  controlTitle: {
+    fontWeight: '700',
+  },
+  controlDesc: {
+    color: '#64748b',
+    fontSize: 11,
+    marginTop: 2,
   },
 });

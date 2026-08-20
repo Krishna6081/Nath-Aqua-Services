@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { Text, TextInput, Button, RadioButton } from 'react-native-paper';
+import { Text, TextInput, Button, RadioButton, useTheme } from 'react-native-paper';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 import { addressApi } from '../../api/addressApi';
 import { GradientHeader } from '../../components/common/GradientHeader';
 
 export const AddEditAddressScreen = ({ navigation }: any) => {
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const theme = useTheme();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [houseBuilding, setHouseBuilding] = useState('');
   const [street, setStreet] = useState('');
   const [area, setArea] = useState('');
@@ -16,43 +21,72 @@ export const AddEditAddressScreen = ({ navigation }: any) => {
   const [landmark, setLandmark] = useState('');
   const [type, setType] = useState<'HOME' | 'OFFICE' | 'OTHER'>('HOME');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      if (!fullName) setFullName(user.name || '');
+      if (!phone) setPhone(user.phone || '');
+    }
+  }, [user]);
 
   const handleSave = async () => {
-    if (!fullName || !phone || !houseBuilding || !area || !pincode) {
-      Alert.alert('Validation Error', 'Please fill all required address fields.');
+    setErrorMessage(null);
+    if (!fullName.trim() || !phone.trim() || !houseBuilding.trim() || !area.trim() || !pincode.trim()) {
+      const msg = 'Please fill all required fields marked with *';
+      setErrorMessage(msg);
+      Alert.alert('Validation Error', msg);
       return;
     }
 
     setLoading(true);
     try {
-      await addressApi.createAddress({
-        fullName,
-        phone,
-        houseBuilding,
-        street,
-        area,
-        city,
-        state,
-        pincode,
-        landmark,
+      const payload = {
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        houseBuilding: houseBuilding.trim(),
+        street: street.trim() || area.trim(),
+        area: area.trim(),
+        city: city.trim() || 'Pune',
+        state: state.trim() || 'Maharashtra',
+        pincode: pincode.trim(),
+        landmark: landmark.trim(),
         type,
         isDefault: true,
-      });
+      };
 
-      Alert.alert('Success', 'Delivery address saved successfully');
-      navigation.goBack();
+      await addressApi.createAddress(payload);
+
+      Alert.alert('Success 🎉', 'Delivery address saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+      // Safety fallback goBack
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Error saving address');
+      const errorText = err.response?.data?.message || err.message || 'Error saving address. Please try again.';
+      setErrorMessage(errorText);
+      Alert.alert('Error', errorText);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <GradientHeader title="Add Delivery Address" showBack onBackPress={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {errorMessage && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
+          </View>
+        )}
+
         <TextInput
           label="Full Name *"
           value={fullName}
@@ -105,15 +139,45 @@ export const AddEditAddressScreen = ({ navigation }: any) => {
           mode="outlined"
           style={styles.input}
         />
+        <TextInput
+          label="Landmark (Optional)"
+          value={landmark}
+          onChangeText={setLandmark}
+          mode="outlined"
+          style={styles.input}
+        />
 
-        <Text style={{ fontWeight: 'bold', marginVertical: 6 }}>Address Type:</Text>
-        <View style={styles.radioRow}>
-          {['HOME', 'OFFICE', 'OTHER'].map((t) => (
-            <TouchableOpacity key={t} style={styles.radioItem} onPress={() => setType(t as any)}>
-              <RadioButton value={t} status={type === t ? 'checked' : 'unchecked'} />
-              <Text>{t}</Text>
-            </TouchableOpacity>
-          ))}
+        <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Address Type:</Text>
+        <View style={styles.typeRow}>
+          {[
+            { id: 'HOME', label: 'Home', icon: 'home' },
+            { id: 'OFFICE', label: 'Office', icon: 'office-building' },
+            { id: 'OTHER', label: 'Other', icon: 'map-marker' },
+          ].map((item) => {
+            const isSelected = type === item.id;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.7}
+                style={[
+                  styles.typeChip,
+                  isSelected
+                    ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                    : { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline },
+                ]}
+                onPress={() => setType(item.id as any)}
+              >
+                <Text
+                  style={[
+                    styles.typeText,
+                    { color: isSelected ? '#ffffff' : theme.colors.onSurface },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <Button
@@ -121,8 +185,9 @@ export const AddEditAddressScreen = ({ navigation }: any) => {
           onPress={handleSave}
           loading={loading}
           disabled={loading}
-          style={styles.saveBtn}
-          contentStyle={{ paddingVertical: 6 }}
+          style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
+          contentStyle={{ paddingVertical: 8 }}
+          labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
         >
           Save Address
         </Button>
@@ -134,24 +199,51 @@ export const AddEditAddressScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  errorText: {
+    color: '#991b1b',
+    fontWeight: '600',
+    fontSize: 13,
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  radioRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 20,
+  sectionTitle: {
+    fontWeight: 'bold',
+    marginVertical: 8,
   },
-  radioItem: {
+  typeRow: {
     flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  typeChip: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeText: {
+    fontWeight: '700',
+    fontSize: 13,
   },
   saveBtn: {
     borderRadius: 25,
+    marginTop: 8,
   },
 });
